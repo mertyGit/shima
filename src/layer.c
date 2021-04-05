@@ -467,15 +467,11 @@ static int hasInstance(SILLYR *layer) {
  *****************************************************************************/
 void sil_destroyLayer(SILLYR *layer) {
   if ((layer)&&(layer->init)) {
-
     if (0==hasInstance(layer)) sil_destroyFB(layer->fb);
-
     layer->init=0;
-    if (layer==glyr.bottom) {
-      glyr.bottom=layer->next;
-    } else {
-      layer->previous->next=layer->next;
-    }
+    sil_toBottom(layer);
+    glyr.bottom=layer->next;
+    layer->next->previous=NULL;
     if ((layer->flags&SILFLAG_FREEUSER)&&(layer->user)) free(layer->user);
     free(layer);
   } else {
