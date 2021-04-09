@@ -2,9 +2,12 @@
 #define SHIMA_H
 #include "sil.h"
 
+/* game states */
 #define SELECTPUZZLE   1
 #define SOLVINGPUZZLE  2
 #define SOLVED         3
+#define WARNBACK       4
+#define WARNRESTART    5
 
 #define PARSEKEYWORD   0
 #define PARSESTART     1
@@ -13,6 +16,7 @@
 #define MOVEALL        0
 #define MOVESHORTEST   1
 #define MOVELONGEST    2
+
 
 #define PUZZLEDIR "puzzles/"
 
@@ -69,6 +73,7 @@ void initBackground();
 void initPuzzleSelect();
 void hidePuzzleSelect();
 void puzzleSolving();
+void warning(BYTE);
 
 
 #endif

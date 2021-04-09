@@ -11,12 +11,15 @@
 
 
 static SILLYR *bgLyr,*selectLyr,*prevLyr,*nextLyr,*selLyr,*lastLyr,*firstLyr,*btn_prevLyr,*btn_nextLyr;
-static SILLYR *creatorLyr,*descLyr,*titleLyr,*boardLyr,*tmpLyr;
+static SILLYR *creatorLyr,*descLyr,*titleLyr,*boardLyr,*tmpLyr,*btn_backLyr,*btn_restartLyr,*movesLyr,*mcntLyr;
+static SILLYR *btn_okLyr,*btn_cancelLyr,*warnrestartLyr,*warnbackLyr;
 static SILFONT *boogalo18Fnt,*boogalo22Fnt,*mm32Fnt,*ss16Fnt,*ad24Fnt,*ado24Fnt,*ado28Fnt;
+static SILGROUP *selectGrp,*solveGrp,*warningGrp;
 static int selected=0;
 static char **inifiles=NULL;
 static int iniamount=0;
 static int gamestate=0;
+static UINT mcnt;
 
 PUZZLE puzzle;
 
@@ -40,29 +43,20 @@ char idx2piece(BYTE idx) {
   return ar[idx];
 }
 
-/* copy block out of layer to another layer, from xfrom,yfrom to xto, yto and */
-/* width & height of single block                                   */
-void copyblock(SILLYR *from, SILLYR *to, int xfrom, int yfrom, int xto, int yto, int w, int h) {
+/* copy block (pw x ph) out of layer to another layer, from xfrom,yfrom to xto, yto  */
+void copyblock(SILLYR *from, SILLYR *to, int xfrom, int yfrom, int xto, int yto, BYTE blend) {
   BYTE red,green,blue,alpha;
-  for (int y=0;y<h;y++) {
-    for (int x=0;x<w;x++) {
+  for (int y=0;y<puzzle.ph;y++) {
+    for (int x=0;x<puzzle.pw;x++) {
       sil_getPixelLayer(from,xfrom+x,yfrom+y,&red,&green,&blue,&alpha);
-      sil_putPixelLayer(to,xto+x,yto+y,red,green,blue,alpha);
+      if (blend) {
+        sil_blendPixelLayer(to,xto+x,yto+y,red,green,blue,alpha);
+      } else {
+        sil_putPixelLayer(to,xto+x,yto+y,red,green,blue,alpha);
+      }
     }
   }
 }
-
-/* same as copyblock, but now with blendpixel, preserving alpha of background */
-void copyblock2(SILLYR *from, SILLYR *to, int xfrom, int yfrom, int xto, int yto, int w, int h) {
-  BYTE red,green,blue,alpha;
-  for (int y=0;y<h;y++) {
-    for (int x=0;x<w;x++) {
-      sil_getPixelLayer(from,xfrom+x,yfrom+y,&red,&green,&blue,&alpha);
-      sil_blendPixelLayer(to,xto+x,yto+y,red,green,blue,alpha);
-    }
-  }
-}
-
 
 
 /* parse given .ini file (should be in PUZZLEDIR directory) */
@@ -75,6 +69,8 @@ void parseIni(char *filename) {
   int cnt=0;
   BYTE state=PARSEKEYWORD;
 
+  //log_info("parse ini %s",filename);
+
   memset(&puzzle,0,sizeof(puzzle));
   /* just to be sure */
   puzzle.shufflefirst=0;
@@ -84,7 +80,7 @@ void parseIni(char *filename) {
   puzzle.maxy=0;
   puzzle.movement=MOVEALL;
 
-    /* open .ini file */
+  /* open .ini file */
   memset(&file[0],0,sizeof(file));
   strcat(file,PUZZLEDIR);
   strncat(file,filename,sizeof(file)-strlen(file)-1);
@@ -126,7 +122,7 @@ void parseIni(char *filename) {
     /* remove trailing spaces */
     for (int i=strlen(v)-1;((i>0)&&(isspace(v[i])));i--) v[i]='\0';
 
-    //log_info("Got key '%s' and value '%s'",k,v);
+    // log_info("Got key '%s' and value '%s'",k,v);
 
     if (PARSEKEYWORD==state) {
       /* translate keywords to lowercase */
@@ -168,12 +164,12 @@ void parseIni(char *filename) {
 
     if(strcmp(k,"movement")==0) {
       for (int i=0;i<strlen(v);i++) v[i]=tolower(v[i]);
-      if ((strcmp,v,"shortest")==0) {
-        puzzle.movement=MOVESHORTEST;
+      if (strcmp(v,"shortest")==0) {
+        puzzle.movement=MOVESHORTEST;        
         continue;
       }
-      if ((strcmp,v,"longest")==0) {
-        puzzle.movement=MOVELONGEST;
+      if (strcmp(v,"longest")==0) {
+        puzzle.movement=MOVELONGEST;        
       }
       continue;
     }
@@ -270,6 +266,8 @@ void showPreview(SILLYR *layer,int idx) {
 
 }
 
+/* recursive insert inifile at right sorted position */
+
 void insertIni(int place, char *p) {
   if (NULL!=inifiles[place]) {
     /* move to the right to make place */
@@ -277,6 +275,8 @@ void insertIni(int place, char *p) {
   }
   inifiles[place]=p;
 }
+
+/* load a list of all .ini files  */
 
 void getPuzzles() {
   DIR *pzls;
@@ -348,6 +348,9 @@ void getPuzzles() {
 /* show selection of puzzles to choose from */
 
 void puzzleSelection() {
+  sil_hideGroup(solveGrp);
+  sil_hideGroup(warningGrp);
+
   sil_show(selectLyr);
   sil_show(firstLyr);
   sil_show(prevLyr);
@@ -407,7 +410,7 @@ void puzzleSelection() {
   /* Title */
   if (strlen(puzzle.title)) {
     /* title layer might be used & moved previous */
-    sil_placeLayer(titleLyr,350,520);
+    sil_placeLayer(titleLyr,350,525);
     sil_paintLayer(titleLyr,SILCOLOR_BLACK,0);
     sil_setForegroundColor(SILCOLOR_PALE_GOLDEN_ROD,255);
     sil_drawText(titleLyr,mm32Fnt,puzzle.title,0,0,0);
@@ -433,6 +436,18 @@ void puzzleSelection() {
 
 
   sil_updateDisplay();
+}
+
+UINT back(SILEVENT *event) {
+  if (SOLVINGPUZZLE==gamestate) {
+    warning(WARNBACK);
+  }
+}
+
+UINT restart(SILEVENT *event) {
+  if (SOLVINGPUZZLE==gamestate) {
+    warning(WARNRESTART);
+  }
 }
 
 UINT lightUp(SILEVENT *event) {
@@ -499,90 +514,56 @@ UINT previousPuzzle(SILEVENT *event) {
   return 0;
 }
 
+
 /* Check if piece can be moved                        */
 /* returns 1 when can be, 0 when wasn't allow to move */
 /* dx,dy -> positive = right,down negative= left,up   */
 
 BYTE checkshift(int code,int dx,int dy) {
   BYTE isok=1;
-  int x,y;
-  int w,h;
+  int x,y,addx,addy,absdx,absdy;
 
+  if ((0==dx)&&(0==dy)) return 0;
 
-  x=puzzle.piece[code].x;
-  y=puzzle.piece[code].y;
-  w=puzzle.piece[code].width/puzzle.pw;
-  h=puzzle.piece[code].height/puzzle.ph;
-  /* check if it isn't allowed to move anyway */
-  if (dx>0) {
-    /* right */
-    if (x+w>=puzzle.maxx) return 0;
-    if (0==puzzle.piece[code].right) return 0;
-    x+=w;
-    for (int i=0;i<h;i++) {
-      if ((y+i<puzzle.maxy)&&(x<puzzle.maxx)) {
-        if (puzzle.pos[x][y+i]!=0) {
+  absdx=SIL_ABS(dx);
+  absdy=SIL_ABS(dy);
+  if (absdx>absdy) {
+    addx=dx/absdx;
+    addy=0;
+  } else {
+    addy=dy/absdy;
+    addx=0;
+  }
+
+  //log_info("code %d (%c) , addx=%d, addy=%d",code,idx2piece(code),addx,addy);
+  //log_info("rlud: %d,%d,%d,%d",puzzle.piece[code].right,puzzle.piece[code].left,puzzle.piece[code].up,puzzle.piece[code].down);
+
+  /* bail out if prohibited by movement indicator */
+  if ((addx>0)&&(0==puzzle.piece[code].right)) return 0;
+  if ((addx<0)&&(0==puzzle.piece[code].left )) return 0;
+  if ((addy<0)&&(0==puzzle.piece[code].up   )) return 0;
+  if ((addy>0)&&(0==puzzle.piece[code].down )) return 0;
+
+  /* seach map for all pieces with same code */
+  /* if moved, it should move to place occupied by space or part of */
+  /* own structure, so same code                                   */
+  for (x=0;x<puzzle.maxx;x++) {
+    for (y=0;y<puzzle.maxy;y++) {
+      if (puzzle.pos[x][y]==code) {
+        /* check if we didn't hit a border yet */
+        if ((x+addx==puzzle.maxx)||(x+addx<0)||
+            (y+addy==puzzle.maxy)||(y+addy<0)) {
           isok=0;
+        } else {
+          if (((puzzle.pos[x+addx][y+addy])!=code)&&
+              ((puzzle.pos[x+addx][y+addy])!=0)) {
+            isok=0;
+          }
         }
-      } else {
-        isok=0;
       }
-      y++;
     }
-    return isok;
-  } 
-  if (dx<0) {
-    /* left */
-    if (x-1<0) return 0;
-    if (0==puzzle.piece[code].left) return 0;
-    x--;
-    for (int i=0;i<h;i++) {
-      if ((y+i<puzzle.maxy)&&(x>=0)) {
-        if (puzzle.pos[x][y+i]!=0) isok=0;
-      } else {
-        isok=0;
-      }
-      y++;
-    }
-    return isok;
-
   }
-  if (dy>0) {
-    /* down */
-    if (y+h>=puzzle.maxy) return 0;
-    if (0==puzzle.piece[code].down) return 0;
-    y+=h;
-    for (int i=0;i<w;i++) {
-      if ((x+i<puzzle.maxx)&&(y<puzzle.maxy)) {
-        if (puzzle.pos[x+i][y]!=0) {
-          isok=0;
-        }
-      } else {
-        isok=0;
-      } 
-      x++;
-    }
-    return isok;
-  }
-  if (dy<0) {
-    /* up */
-    if (y-1<0) return 0;
-    if (0==puzzle.piece[code].up) return 0;
-    y--;
-    for (int i=0;i<w;i++) {
-      if ((x+i<puzzle.maxx)&&(y>=0)) {
-        if (puzzle.pos[x+i][y]!=0) {
-          isok=0;
-        }
-      } else {
-        isok=0;
-      } 
-      x++;
-    }
-    return isok;
-  }
-
-  return 0;
+  return isok;
 }
 
 
@@ -591,17 +572,58 @@ BYTE checkshift(int code,int dx,int dy) {
 BYTE shiftpiece (int code,int dx,int dy) {
   BYTE ret=0;
   ret=checkshift(code,dx,dy);
+  if (0==ret) return 0;
   if (dx<0) {
     /* left */
+    for (int y=0;y<puzzle.maxy;y++) {
+      for (int x=1;x<puzzle.maxx;x++) {
+        if (puzzle.pos[x][y]==code) {
+          puzzle.pos[x-1][y]=code;
+          puzzle.pos[x][y]=0;
+        }
+      }
+    }
+    puzzle.piece[code].x-=puzzle.pw;
+    sil_moveLayer(puzzle.pieceLyr[code],-puzzle.pw,0);
   }
   if (dx>0) {
     /* right */
-  }
-  if (dy<0) {
-    /* up */
+    for (int y=0;y<puzzle.maxy;y++) {
+      for (int x=puzzle.maxx-1;x>=0;x--) {
+        if (puzzle.pos[x][y]==code) {
+          puzzle.pos[x+1][y]=code;
+          puzzle.pos[x][y]=0;
+        }
+      }
+    }
+    puzzle.piece[code].x+=puzzle.pw;
+    sil_moveLayer(puzzle.pieceLyr[code],puzzle.pw,0);
   }
   if (dy>0) {
     /* down */
+    for (int x=0;x<puzzle.maxx;x++) {
+      for (int y=puzzle.maxy-1;y>=0;y--) {
+        if (puzzle.pos[x][y]==code) {
+          puzzle.pos[x][y+1]=code;
+          puzzle.pos[x][y]=0;
+        }
+      }
+    }
+    puzzle.piece[code].y+=puzzle.ph;
+    sil_moveLayer(puzzle.pieceLyr[code],0,puzzle.ph);
+  }
+  if (dy<0) {
+    /* up */
+    for (int x=0;x<puzzle.maxx;x++) {
+      for (int y=1;y<puzzle.maxy;y++) {
+        if (puzzle.pos[x][y]==code) {
+          puzzle.pos[x][y-1]=code;
+          puzzle.pos[x][y]=0;
+        }
+      }
+    }
+    puzzle.piece[code].y-=puzzle.ph;
+    sil_moveLayer(puzzle.pieceLyr[code],0,-puzzle.ph);
   }
 
 
@@ -624,16 +646,16 @@ UINT dragpiece(SILEVENT *event) {
   dy=(event->y)-(event->layer->rely);
   if (SIL_ABS(dx) > SIL_ABS(dy)) {
     /* move right or left */
-    if (SIL_ABS(dx)>5) {
-      ret=shiftpiece(pp->code,dx,0);
-      if (ret>0) log_info("%c: ALLOWED MOVE",idx2piece(pp->code));
-    }
+    if (SIL_ABS(dx)>5) ret=shiftpiece(pp->code,dx,0);
   } else {
     /* move up or down */
-    if (SIL_ABS(dy)>5) {
-      ret=shiftpiece(pp->code,0,dy);
-      if (ret>0) log_info("%c: ALLOWED MOVE",idx2piece(pp->code));
-    }
+    if (SIL_ABS(dy)>5) ret=shiftpiece(pp->code,0,dy);
+  }
+  if (ret>0) {
+    /* require new mouse click for next moves */
+    /* otherwise movement becomes shacky      */
+    sil_clearFlags(puzzle.pieceLyr[pp->code],SILFLAG_BUTTONDOWN);
+    sil_updateDisplay();
   }
   return 0;
 }
@@ -647,6 +669,7 @@ void initBackground() {
 }
 
 void initPuzzleSelect() {
+  selectGrp=sil_createGroup();
   ado28Fnt=sil_loadFont("architectsdaughter_thickoutline_28px.fnt");
   ad24Fnt=sil_loadFont("architectsdaughter_24px.fnt");
   ado24Fnt=sil_loadFont("architectsdaughter_thickoutline_24px.fnt");
@@ -655,76 +678,137 @@ void initPuzzleSelect() {
   boogalo18Fnt=sil_loadFont("boogalo_18px.fnt");
   boogalo22Fnt=sil_loadFont("boogalo_22px.fnt");
 
-  selectLyr=sil_PNGtoNewLayer("selection_background.png",200,100);
-  sil_hide(selectLyr);
+  selectLyr=sil_PNGtoNewLayer("selection_background.png",200,110);
+  sil_addLayerGroup(selectGrp,selectLyr);
 
-  firstLyr=sil_addLayer(100,100,260,300,SILTYPE_ARGB);
+  firstLyr=sil_addLayer(260,300,100,100,SILTYPE_ARGB);
   sil_setAlphaLayer(firstLyr,0.1);
-  sil_hide(firstLyr);
+  sil_addLayerGroup(selectGrp,firstLyr);
 
-  prevLyr=sil_addLayer(100,100,370,300,SILTYPE_ARGB);
+  prevLyr=sil_addLayer(370,300,100,100,SILTYPE_ARGB);
   sil_setAlphaLayer(prevLyr,0.5);
-  sil_hide(prevLyr);
+  sil_addLayerGroup(selectGrp,prevLyr);
 
-  nextLyr=sil_addLayer(100,100,520,300,SILTYPE_ARGB);
+  nextLyr=sil_addLayer(520,300,100,100,SILTYPE_ARGB);
   sil_setAlphaLayer(nextLyr,0.5);
-  sil_hide(nextLyr);
+  sil_addLayerGroup(selectGrp,nextLyr);
 
-  lastLyr=sil_addLayer(100,100,630,300,SILTYPE_ARGB);
+  lastLyr=sil_addLayer(630,300,100,100,SILTYPE_ARGB);
   sil_setAlphaLayer(lastLyr,0.1);
-  sil_hide(lastLyr);
+  sil_addLayerGroup(selectGrp,lastLyr);
 
-  selLyr=sil_addLayer(100,100,440,310,SILTYPE_ARGB);
-  sil_hide(selLyr);
+  selLyr=sil_addLayer(440,310,100,100,SILTYPE_ARGB);
+  sil_addLayerGroup(selectGrp,selLyr);
   
   btn_prevLyr=sil_PNGtoNewLayer("buttonprevious.png",230,430);
   sil_setAlphaLayer(btn_prevLyr,0.3);
   sil_setHoverHandler(btn_prevLyr,lightUp);
   sil_setClickHandler(btn_prevLyr,previousPuzzle);
-  sil_hide(btn_prevLyr);
+  sil_addLayerGroup(selectGrp,btn_prevLyr);
 
   btn_nextLyr=sil_PNGtoNewLayer("buttonnext.png",630,435);
   sil_setAlphaLayer(btn_nextLyr,0.3);
   sil_setHoverHandler(btn_nextLyr,lightUp);
   sil_setClickHandler(btn_nextLyr,nextPuzzle);
-  sil_hide(btn_nextLyr);
+  sil_addLayerGroup(selectGrp,btn_nextLyr);
 
-  titleLyr=sil_addLayer(375,35,350,520,SILTYPE_ARGB);
-  sil_hide(titleLyr);
-  descLyr=sil_addLayer(375,55,270,560,SILTYPE_ARGB);
-  sil_hide(descLyr);
-  creatorLyr=sil_addLayer(375,55,270,620,SILTYPE_ARGB);
-  sil_hide(creatorLyr);
+  titleLyr=sil_addLayer(350,525,375,35,SILTYPE_ARGB);
+  sil_addLayerGroup(selectGrp,titleLyr);
+  descLyr=sil_addLayer(270,560,375,55,SILTYPE_ARGB);
+  sil_addLayerGroup(selectGrp,descLyr);
+  creatorLyr=sil_addLayer(270,620,375,55,SILTYPE_ARGB);
+  sil_addLayerGroup(selectGrp,creatorLyr);
+  sil_hideGroup(selectGrp);
 }
 
-void hidePuzzleSelect() {
-  sil_hide(selectLyr);
-  sil_hide(firstLyr);
-  sil_hide(prevLyr);
-  sil_hide(nextLyr);
-  sil_hide(lastLyr);
-  sil_hide(selLyr);
-  sil_hide(btn_prevLyr);
-  sil_hide(btn_nextLyr);
-  sil_hide(creatorLyr);
-  sil_hide(descLyr);
-  sil_hide(titleLyr);
+void initWarning() {
+  warningGrp=sil_createGroup();
+
+  btn_okLyr=sil_PNGtoNewLayer("surebutton.png",335,535);
+  sil_addLayerGroup(warningGrp,btn_okLyr);
+  sil_setAlphaLayer(btn_prevLyr,0.3);
+  sil_setHoverHandler(btn_prevLyr,lightUp);
+
+  btn_cancelLyr=sil_PNGtoNewLayer("cancelbutton.png",480,535);
+  sil_addLayerGroup(warningGrp,btn_cancelLyr);
+  sil_setAlphaLayer(btn_prevLyr,0.3);
+  sil_setHoverHandler(btn_prevLyr,lightUp);
+
+  warnrestartLyr=sil_PNGtoNewLayer("warningrestart.png",290,300);
+  sil_addLayerGroup(warningGrp,warnrestartLyr);
+
+  warnbackLyr=sil_PNGtoNewLayer("warningback.png",290,300);
+  sil_addLayerGroup(warningGrp,warnbackLyr);
+
+  sil_hideGroup(warningGrp);
 }
 
 void initPuzzleSolving() {
-  boardLyr=sil_addLayer(700,700,150,200,SILTYPE_ARGB);
-  sil_hide(boardLyr);
-  for (int i=0;i<65;i++) puzzle.pieceLyr[i]=NULL;
+  solveGrp=sil_createGroup();
+  boardLyr=sil_addLayer(150,150,700,700,SILTYPE_ARGB);
+  for (int i=0;i<65;i++) {
+    puzzle.pieceLyr[i]=NULL;
+    sil_addLayerGroup(solveGrp,puzzle.pieceLyr[i]);
+  }
+
+  btn_backLyr=sil_PNGtoNewLayer("back.png",30,880);
+  sil_setAlphaLayer(btn_backLyr,0.3);
+  sil_setHoverHandler(btn_backLyr,lightUp);
+  sil_setClickHandler(btn_backLyr,back);
+  sil_addLayerGroup(solveGrp,btn_backLyr);
+
+  btn_restartLyr=sil_PNGtoNewLayer("restart.png",450,880);
+  sil_setAlphaLayer(btn_restartLyr,0.3);
+  sil_setHoverHandler(btn_restartLyr,lightUp);
+  sil_setClickHandler(btn_restartLyr,restart);
+  sil_addLayerGroup(solveGrp,btn_restartLyr);
+
+  movesLyr=sil_addLayer(900,145,100,80,SILTYPE_ARGB);
+  sil_PNGintoLayer(movesLyr,"moves.png",0,0);
+  sil_addLayerGroup(solveGrp,movesLyr);
+
+  mcntLyr=sil_addLayer(900,200,100,120,SILTYPE_ARGB);
+  sil_addLayerGroup(solveGrp,mcntLyr);
+  sil_setForegroundColor(SILCOLOR_PALE_GOLDEN_ROD,255);
+  sil_drawText(mcntLyr,mm32Fnt,"0",50,0,0);
+  sil_addLayerGroup(solveGrp,mcntLyr);
+
+  sil_hideGroup(solveGrp);
+
+}
+
+void destroyPuzzleSolving() {
+  for (int i=0;i<65;i++) {
+    if (NULL!=puzzle.pieceLyr[i]) sil_destroyLayer(puzzle.pieceLyr[i]);
+  }
+  if (NULL!=boardLyr) sil_destroyLayer(boardLyr);
+}
+
+void warning(BYTE type) {
+  if (WARNBACK==type) {
+    gamestate=WARNBACK;
+    sil_show(warnbackLyr);
+  } else {
+    gamestate=WARNRESTART;
+    sil_show(warnrestartLyr);
+  }
+  sil_show(btn_okLyr);
+  sil_show(btn_cancelLyr);
+  sil_topGroup(warningGrp);
+  sil_updateDisplay();
 }
 
 void puzzleSolving() {
-  hidePuzzleSelect();
+  sil_hideGroup(warningGrp);
+  sil_hideGroup(selectGrp);
+  sil_showGroup(solveGrp);
   int code;
   int calcw,calch;
   int min_x,max_x,min_y,max_y;
 
+  gamestate=SOLVINGPUZZLE;
    /* re-use title layer */
-  sil_placeLayer(titleLyr,350,120);
+  sil_placeLayer(titleLyr,350,80);
   sil_show(titleLyr);
 
   /* place background of board */
@@ -733,7 +817,7 @@ void puzzleSolving() {
 
   /* now, create layers with the piecespic */
   tmpLyr=sil_PNGtoNewLayer(puzzle.pieces,0,0);
-  log_info("pieces %s wxh=%dx%d",puzzle.pieces,tmpLyr->fb->width,tmpLyr->fb->height);
+  //log_info("pieces %s wxh=%dx%d",puzzle.pieces,tmpLyr->fb->width,tmpLyr->fb->height);
   sil_hide(tmpLyr);
 
   /* calculate widthxheight of one code/rectangle */
@@ -743,98 +827,97 @@ void puzzleSolving() {
   for (int y=0;y<puzzle.maxy;y++) {
     for (int x=0;x<puzzle.maxx;x++) {
       code=puzzle.start[x][y];
-      if ((code>2)&&(NULL==puzzle.pieceLyr[code])) {
-        /* found one that isn't loaded yet */
-        /* first, get dimenstions of layer to create */
-        calcw=0;
-        calch=0;
-        for (int i=x;i<puzzle.maxx;i++) {
-          if (puzzle.start[i][y]==code) {
-            calcw+=puzzle.pw;
-          } else {
-            i=puzzle.maxx;
-          }
-        }
-        for (int i=y;i<puzzle.maxy;i++) {
-          if (puzzle.start[x][i]==code) {
-            calch+=puzzle.ph;
-          } else {
-            i=puzzle.maxy;
-          }
-        }
-
-        /* create layer for pieces that do move */
-        puzzle.pieceLyr[code]=sil_addLayer(calcw,calch,boardLyr->relx+puzzle.posx+x*puzzle.pw,
-          boardLyr->rely+puzzle.posy+y*puzzle.ph,SILTYPE_ARGB);
+      if (code>2) {
         if (NULL==puzzle.pieceLyr[code]) {
-          log_warn("can't create layers for pieces");
-          return;
-        }
+          /* found one that isn't loaded yet                                 */
+          /* first, get dimenstions of layer to create                       */
+          /* found element cannot always be left upper corner of whole layer */
+          /* parts of it might extend to left on lower rows                  */
 
-        /* populate piece specific information */
-        puzzle.piece[code].code=code;
-        puzzle.piece[code].width=calcw;
-        puzzle.piece[code].height=calch;
-        puzzle.piece[code].up=1;
-        puzzle.piece[code].down=1;
-        puzzle.piece[code].right=1;
-        puzzle.piece[code].left=1;
-        puzzle.piece[code].origx=x;
-        puzzle.piece[code].origy=y;
-        puzzle.piece[code].x=x;
-        puzzle.piece[code].y=y;
-
-        /* set movement boundaries per piece, if there are any */
-        if (MOVESHORTEST==puzzle.movement) {
-          if (calcw>calch) {
-            /* horizontal longest , so don't move up & down */
-            puzzle.piece[code].up=0;
-            puzzle.piece[code].down=0;
-          } else {
-            /* vertical longest */
-            puzzle.piece[code].right=0;
-            puzzle.piece[code].left=0;
+          min_x=x;
+          max_x=x;
+          min_y=y;
+          max_y=y;
+          for (int iy=y;iy<puzzle.maxy;iy++) {
+            for (int ix=0;ix<puzzle.maxx;ix++) {
+              if (puzzle.start[ix][iy]==code) {
+                if (ix<min_x) min_x=ix;
+                if (ix>max_x) max_x=ix;
+                if (iy<min_y) min_y=iy;
+                if (iy>max_y) max_y=iy;
+              }
+            }
           }
-        } else {
-          if (MOVELONGEST==puzzle.movement) {
+          calcw=(max_x-min_x+1)*puzzle.pw;
+          calch=(max_y-min_y+1)*puzzle.ph;
+
+          /* create layer for pieces that do move */
+          puzzle.pieceLyr[code]=sil_addLayer(
+            boardLyr->relx+puzzle.posx+min_x*puzzle.pw,
+            boardLyr->rely+puzzle.posy+min_y*puzzle.ph,
+            calcw,calch,
+            SILTYPE_ARGB);
+          if (NULL==puzzle.pieceLyr[code]) {
+            log_warn("can't create layers for pieces");
+            return;
+          }
+
+          /* populate piece specific information */
+          puzzle.piece[code].code=code;
+          puzzle.piece[code].width=calcw;
+          puzzle.piece[code].height=calch;
+          puzzle.piece[code].up=1;
+          puzzle.piece[code].down=1;
+          puzzle.piece[code].right=1;
+          puzzle.piece[code].left=1;
+          puzzle.piece[code].origx=min_x;
+          puzzle.piece[code].origy=min_y;
+          puzzle.piece[code].x=min_x;
+          puzzle.piece[code].y=min_y;
+
+          /* set movement boundaries per piece, if there are any */
+          if (MOVESHORTEST==puzzle.movement) {
             if (calcw>calch) {
-              /* horizontal longest , so only move up & down */
-              puzzle.piece[code].right=0;
-              puzzle.piece[code].left=0;
-            } else {
-              /* vertical longest */
+              /* horizontal longest , so don't move up & down */
               puzzle.piece[code].up=0;
               puzzle.piece[code].down=0;
+            } else {
+              /* vertical longest */
+              puzzle.piece[code].right=0;
+              puzzle.piece[code].left=0;
+            }
+          } else {
+            if (MOVELONGEST==puzzle.movement) {
+              if (calcw>calch) {
+                /* horizontal longest , so only move up & down */
+                puzzle.piece[code].right=0;
+                puzzle.piece[code].left=0;
+              } else {
+                /* vertical longest */
+                puzzle.piece[code].up=0;
+                puzzle.piece[code].down=0;
+              }
             }
           }
+
+          /* store pointer to this PIECE inside "user" part of layerstruct     */
+          /* doing this, we can traceback to piececode when is given via event */
+          puzzle.pieceLyr[code]->user= &puzzle.piece[code];
+
+          /* set mousehandler */
+          sil_setDragHandler(puzzle.pieceLyr[code],dragpiece);
+          sil_show(puzzle.pieceLyr[code]);
         }
+        /* now we have a block of a piece; copy this to layer of piece */
+        copyblock(tmpLyr,puzzle.pieceLyr[code],x*puzzle.pw,y*puzzle.ph,
+          (x-puzzle.piece[code].x)*puzzle.pw,(y-puzzle.piece[code].y)*puzzle.ph,0);
 
-        /* store pointer to this PIECE inside "user" part of layerstruct     */
-        /* doing this, we can traceback to piececode when is given via event */
-        puzzle.pieceLyr[code]->user= &puzzle.piece[code];
-
-        /* set mousehandler */
-        sil_setDragHandler(puzzle.pieceLyr[code],dragpiece);
-
-
-        /* and copy pixelinformation in it from pieces */
-        for (int ix=x;ix<puzzle.maxx;ix++) {
-          for (int iy=y;iy<puzzle.maxy;iy++) {
-            if (puzzle.start[ix][iy]==code) {
-              copyblock(tmpLyr,puzzle.pieceLyr[code],ix*puzzle.pw,iy*puzzle.ph,(ix-x)*puzzle.pw,
-                (iy-y)*puzzle.ph,puzzle.pw,puzzle.ph);
-            }
-          }
-        }
-        sil_show(puzzle.pieceLyr[code]);
-
-      } else {
-        if (code>2) {
-        }
+      } else { 
         if (2==code) {
-          /* fixed piece; just copy single instance directly onto board */
-          copyblock2(tmpLyr,boardLyr,x*puzzle.pw,y*puzzle.ph,x*puzzle.pw+puzzle.posx,y*puzzle.ph+puzzle.posx,puzzle.pw,puzzle.ph);
-        }
+          /* fixed piece; just copy single instance directly onto board (with blending this time) */
+          copyblock(tmpLyr,boardLyr,x*puzzle.pw,y*puzzle.ph,
+            x*puzzle.pw+puzzle.posx,y*puzzle.ph+puzzle.posx,1);
+        } 
       }
     }
   }
@@ -862,12 +945,16 @@ int main() {
   getPuzzles();
   initPuzzleSelect();
   initPuzzleSolving();
+  initWarning();
 
 
   puzzleSelection();
 
   sil_mainLoop();
 
+  sil_destroyGroup(warningGrp);
+  sil_destroyGroup(selectGrp);
+  sil_destroyGroup(solveGrp);
   sil_destroyFont(ad24Fnt);
   sil_destroyFont(ado28Fnt);
   sil_destroySIL();

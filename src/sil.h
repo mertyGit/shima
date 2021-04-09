@@ -92,6 +92,8 @@ void sil_destroyFB(SILFB *);
 #define SILFLAG_DRAGGABLE      8
 #define SILFLAG_VIEWPOSSTAY   16
 #define SILFLAG_FREEUSER      32
+#define SILFLAG_MOUSESHIELD   64
+#define SILFLAG_MOUSEALLPIX  128
 
 /* bitmask for internal */
 #define SILFLAG_ALPHACHANGED   1
@@ -195,6 +197,28 @@ void sil_hide(SILLYR *);
 void sil_show(SILLYR *);
 SILLYR *sil_addCopy(SILLYR *,UINT,UINT);
 SILLYR *sil_addInstance(SILLYR *,UINT,UINT);
+
+/* group.c */
+typedef struct _SILGROUP {
+  SILLYR *layer;
+  struct _SILGROUP *next;
+} SILGROUP;
+
+SILGROUP *sil_createGroup();
+void sil_addLayerGroup(SILGROUP *,SILLYR *);
+void sil_removeLayerGroup(SILGROUP *,SILLYR *);
+UINT sil_checkLayerGroup(SILGROUP *,SILLYR *);
+void sil_destroyGroup(SILGROUP *);
+void sil_hideGroup(SILGROUP *);
+void sil_showGroup(SILGROUP *);
+void sil_moveGroup(SILGROUP *,int,int);
+void sil_nextSpriteGroup(SILGROUP *);
+void sil_prevSpriteGroup(SILGROUP *);
+void sil_setSpriteGroup(SILGROUP *,UINT);
+void sil_resetViewGroup(SILGROUP *);
+void sil_topGroup(SILGROUP *);
+void sil_bottomGroup(SILGROUP *);
+
 
 /* font.c */
 
