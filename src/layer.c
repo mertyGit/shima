@@ -881,15 +881,12 @@ SILLYR *sil_findHighestClick(UINT x,UINT y) {
         sil_getPixelLayer(layer,x-layer->relx,y-layer->rely,&red,&green,&blue,&alpha);
         if (alpha>0) return layer;
       }
+      /* if we find layer with flag "MOUSESHIELD" , we stop searching */
+      /* therefore blocking/shielding any mouseevent for layer under  */
+      /* this layer                                                   */
+      if (layer->flags&(SILFLAG_MOUSESHIELD)) return NULL;
     }
-    /* if we find layer with flag "MOUSESHIELD" , we stop searching */
-    /* therefore blocking/shielding any mouseevent for layer under  */
-    /* this layer                                                   */
-    if (!(layer->flags&SILFLAG_MOUSESHIELD)) {
-      layer=layer->previous;
-    } else {
-      layer=NULL; 
-    }
+    layer=layer->previous;
   }
   sil_setErr(SILERR_ALLOK);
   return NULL;
@@ -930,15 +927,12 @@ SILLYR *sil_findHighestHover(UINT x,UINT y) {
         sil_getPixelLayer(layer,x-layer->relx,y-layer->rely,&red,&green,&blue,&alpha);
         if (alpha>0) return layer;
       }
+      /* if we find layer with flag "MOUSESHIELD" , we stop searching */
+      /* therefore blocking/shielding any mouseevent for layer under  */
+      /* this layer                                                   */
+      if (layer->flags&(SILFLAG_MOUSESHIELD)) return NULL;
     }
-    /* if we find layer with flag "MOUSESHIELD" , we stop searching */
-    /* therefore blocking/shielding any mouseevent for layer under  */
-    /* this layer                                                   */
-    if (!(layer->flags&SILFLAG_MOUSESHIELD)) {
-      layer=layer->previous;
-    } else {
-      layer=NULL; 
-    }
+    layer=layer->previous;
   }
   sil_setErr(SILERR_ALLOK);
   return NULL;
@@ -1500,4 +1494,21 @@ void sil_hide(SILLYR *layer) {
 void sil_show(SILLYR *layer) {
   sil_clearFlags(layer,SILFLAG_INVISIBLE);
   sil_setErr(SILERR_ALLOK);
+}
+
+/*****************************************************************************
+
+  clear layer, faster then painting it with color + alpha 0
+
+ *****************************************************************************/
+
+void sil_clearLayer(SILLYR *layer) {
+#ifndef SIL_LIVEDANGEROUS
+  if ((NULL==layer)||(NULL==layer->fb)||(0==layer->fb->size)) {
+    log_warn("clearing layer that isn't initialized or with empty fb");
+    sil_setErr(SILERR_NOTINIT);
+    return ;
+  }
+#endif
+  sil_clearFB(layer->fb);
 }
