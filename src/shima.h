@@ -38,7 +38,7 @@ typedef struct _PIECE {
 
 typedef struct _PUZZLE {
   char title[256];
-  char description[256];
+  char goal[256];
   char creator[256];
   char preview[256];
   char background[256];
@@ -46,8 +46,9 @@ typedef struct _PUZZLE {
   int  posx;
   int  posy;
   BYTE start[100][100];
-  BYTE goal[100][100];
+  BYTE finish[100][100];
   BYTE pos[100][100];
+  int difficulty;
   int maxx;
   int maxy;
   int shufflefirst;
@@ -57,23 +58,5 @@ typedef struct _PUZZLE {
   SILLYR *pieceLyr[65]; /* max. amount of pieces = length of PIECECODES */
   PIECE piece[65];
 } PUZZLE ;
-
-
-
-void showInfo(char *);
-void showPreview(SILLYR *, int);
-void insertIni(int,char *);
-void getPuzzles();
-void puzzleSelection();
-UINT lightUp(SILEVENT *);
-UINT keyhandler(SILEVENT *);
-UINT nextPuzzle(SILEVENT *);
-UINT previousPuzzle(SILEVENT *);
-void initBackground();
-void initPuzzleSelect();
-void hidePuzzleSelect();
-void puzzleSolving();
-void warning(BYTE);
-
 
 #endif

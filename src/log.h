@@ -10,7 +10,7 @@
 
 #define LOG_INITDONE    911
 #define LOG_MAX_LINE   1024
-#define LOG_LINE_WIDTH   80  
+#define LOG_LINE_WIDTH   60  
 #define LOG_MAX_ROW      40  
 
 #define log_mark(M) log_debug("%s [%d]: %s",__FILE__,__LINE__,M);
