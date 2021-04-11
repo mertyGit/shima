@@ -5,7 +5,7 @@ CC = x86_64-w64-mingw32-gcc
 ICO = ico.rco
 DEBUG = -g
 DEPS = sil.h log.h lodepng.h
-OBJ = log.o sil.o framebuffer.o layer.o drawing.o filter.o lodepng.o font.o group.o
+OBJ = log.o sil.o framebuffer.o layer.o drawing.o filter.o lodepng.o font.o group.o pcg_basic.o
 CFLAGS +=-I ./
 
 $(PROG)$E: $(PROG).o $(OBJ) $(DISP).o 

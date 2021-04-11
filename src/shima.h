@@ -8,6 +8,8 @@
 #define SOLVED         3
 #define WARNBACK       4
 #define WARNRESTART    5
+#define WARNSHUFFLE    6
+#define INFO           7
 
 #define PARSEKEYWORD   0
 #define PARSESTART     1
@@ -43,6 +45,7 @@ typedef struct _PUZZLE {
   char preview[256];
   char background[256];
   char pieces[256];
+  char info[256];
   int  posx;
   int  posy;
   BYTE start[100][100];

@@ -2,20 +2,22 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <time.h>
 #ifdef SIL_W32
   #include <windows.h>
 #endif
 #include "log.h"
 #include "sil.h"
+#include "pcg_basic.h"
 #include "shima.h"
 
 
-static SILLYR *bgLyr,*selectLyr,*prevLyr,*nextLyr,*selLyr,*lastLyr,*firstLyr,*btn_prevLyr,*btn_nextLyr;
+static SILLYR *bgLyr,*startLyr,*selectLyr,*prevLyr,*nextLyr,*selLyr,*lastLyr,*firstLyr,*btn_prevLyr,*btn_nextLyr;
 static SILLYR *creatorLyr,*goalLyr,*titleLyr,*boardLyr,*tmpLyr,*btn_backLyr,*btn_restartLyr,*movesLyr,*mcntLyr;
 static SILLYR *btn_okLyr,*btn_cancelLyr,*warnrestartLyr,*warnbackLyr,*starLyr,*winningLyr,*btn_anotherLyr;
-static SILLYR *btn_againLyr,*winmovesLyr;
+static SILLYR *btn_againLyr,*winmovesLyr,*btn_shuffleLyr,*warnshuffleLyr,*btn_infoLyr,*infobackLyr,*infoLyr;
 static SILFONT *boogalo18Fnt,*boogalo22Fnt,*boogalonumFnt,*mm32Fnt,*ss16Fnt,*ad24Fnt,*ado24Fnt,*ado28Fnt;
-static SILGROUP *selectGrp,*solveGrp,*warningGrp,*winningGrp;
+static SILGROUP *selectGrp,*solveGrp,*warningGrp,*winningGrp,*infoGrp;
 static int selected=0;
 static char **inifiles=NULL;
 static int iniamount=0;
@@ -33,7 +35,7 @@ void getPuzzles();
 void updateMove();
 void resetPuzzle();
 void leavePuzzle();
-void shuffle(int,int);
+void shufflePuzzle(UINT,UINT);
 BYTE checkshift(int ,int ,int ); 
 BYTE shiftpiece (int ,int ,int ); 
 
@@ -49,6 +51,9 @@ UINT previousPuzzle(SILEVENT *event);
 UINT okhandler(SILEVENT *event);
 UINT cancelhandler(SILEVENT *event);
 UINT dragpiece(SILEVENT *); 
+UINT shuffle(SILEVENT *);
+UINT info(SILEVENT *);
+UINT goplay(SILEVENT *);
 
 void initBackground(); 
 
@@ -56,11 +61,13 @@ void initPuzzleSelect();
 void initPuzzleSolving(); 
 void initWarning(); 
 void initWinning(); 
+void initInfo(); 
 
 void puzzleSelect(); 
 void puzzleSolving(); 
 void warning(BYTE type); 
 void winning(); 
+void displayInfo();
 
 
 PUZZLE puzzle;
@@ -99,6 +106,65 @@ void copyblock(SILLYR *from, SILLYR *to, int xfrom, int yfrom, int xto, int yto,
     }
   }
 }
+
+/* shuffle piezes */
+void shufflePuzzle(UINT seed, UINT amount) {
+  BYTE dir;
+  UINT xp,yp;
+  UINT x,y;
+  BYTE done=0;
+  BYTE dorig=0;
+  UINT oldmcnt=mcnt;
+  pcg32_random_t pcg;
+
+  pcg32_srandom_r(&pcg,seed,seed);
+
+  for (int cnt=0;cnt<amount;cnt++) {
+    dorig=pcg32_boundedrand_r(&pcg,4);
+    xp=pcg32_boundedrand_r(&pcg,puzzle.maxx);
+    yp=pcg32_boundedrand_r(&pcg,puzzle.maxy);
+    x=xp;
+    y=yp;
+    do {
+      dir=dorig;
+      do {
+        /* check at random position if we can shift the piece */
+        /* starting at given randmon direction                */
+        /* 0=up, 1=right, 2=down, 3=left */
+        switch(dir) {
+          case 0:
+            done=shiftpiece(puzzle.pos[x][y],0,-1);
+            break;
+          case 1:
+            done=shiftpiece(puzzle.pos[x][y],1,0);
+            break;
+          case 2:
+            done=shiftpiece(puzzle.pos[x][y],0,1);
+            break;
+          case 3:
+            done=shiftpiece(puzzle.pos[x][y],-1,0);
+            break;
+        }
+        dir++;
+        if (dir>3) dir=0;
+      } while ((dir!=dorig)&&(!done));
+      
+      /* if not, check next piece */ 
+      x++;
+      if (x>puzzle.maxx) {
+        x=0;
+        y++;
+        if (y>puzzle.maxy) {
+          y=0;
+        }
+      }
+    } while ((!done)&&((xp!=x)||(yp!=y)));
+    mcnt=oldmcnt;
+  }
+  updateMove();
+  sil_updateDisplay();
+}
+
 
 
 /* parse given .ini file (should be in PUZZLEDIR directory) */
@@ -259,6 +325,11 @@ void parseIni(char *filename) {
     if(strcmp(k,"pieces")==0) {
       strcpy(puzzle.pieces,PUZZLEDIR);
       strncat(puzzle.pieces,v,255-strlen(puzzle.pieces)-1);
+      continue;
+    }
+    if(strcmp(k,"info")==0) {
+      strcpy(puzzle.info,PUZZLEDIR);
+      strncat(puzzle.info,v,255-strlen(puzzle.info)-1);
       continue;
     }
     if(strcmp(k,"shufflefirst")==0) {
@@ -464,6 +535,14 @@ UINT restart(SILEVENT *event) {
   return 0;
 }
 
+UINT shuffle(SILEVENT *event) {
+  if (event->type!=SILDISP_MOUSE_DOWN) return 0;
+  if (SOLVINGPUZZLE==gamestate) {
+    warning(WARNSHUFFLE);
+  }
+  return 0;
+}
+
 UINT another(SILEVENT *event) {
   if (event->type!=SILDISP_MOUSE_DOWN) return 0;
   if (SOLVED==gamestate) {
@@ -479,6 +558,7 @@ UINT again(SILEVENT *event) {
     gamestate=SOLVINGPUZZLE;
     sil_hideGroup(winningGrp);
     resetPuzzle();
+    if (puzzle.shufflefirst) shufflePuzzle(666,500);
   }
   return 1;
 }
@@ -495,7 +575,26 @@ UINT lightUp(SILEVENT *event) {
   return 0;
 }
 
+UINT info(SILEVENT *event) {
+  if (event->type!=SILDISP_MOUSE_DOWN) return 0;
+  if (SOLVINGPUZZLE==gamestate) {
+    gamestate=INFO;
+    displayInfo();
+  }
+  return 0;
+}
+
+UINT goplay(SILEVENT *event) {
+  if (event->type!=SILDISP_MOUSE_UP) return 0;
+  sil_hide(startLyr);
+  puzzleSelect();
+  return 0;
+}
+
 UINT keyhandler(SILEVENT *event) {
+  time_t seconds;
+  time(&seconds);
+
   switch(event->type) {
     case SILDISP_KEY_DOWN:
       switch(event->key) {
@@ -517,6 +616,7 @@ UINT keyhandler(SILEVENT *event) {
         case SILKY_SPACE:
           if (SELECTPUZZLE==gamestate) {
             puzzleSolving();
+            if (puzzle.shufflefirst) shufflePuzzle(666,500);
           }
           break;
       }
@@ -534,6 +634,7 @@ UINT keyhandler(SILEVENT *event) {
 UINT selectPuzzle(SILEVENT *event) {
   if (event->type==SILDISP_MOUSE_UP) {
     puzzleSolving();
+    if (puzzle.shufflefirst) shufflePuzzle(666,500);
   }
   return 0;
 }
@@ -555,10 +656,14 @@ UINT previousPuzzle(SILEVENT *event) {
 }
 
 UINT okhandler(SILEVENT *event) {
+  time_t seconds;
+  time(&seconds);
+
   if (gamestate==WARNRESTART) {
     gamestate=SOLVINGPUZZLE;
     sil_hideGroup(warningGrp);
     resetPuzzle();
+    if (puzzle.shufflefirst) shufflePuzzle(666,500);
     return 1;
   }
   if (gamestate==WARNBACK) {
@@ -567,12 +672,20 @@ UINT okhandler(SILEVENT *event) {
     leavePuzzle();
     return 0;
   }
+  if (gamestate==WARNSHUFFLE) {
+    gamestate=SOLVINGPUZZLE;
+    sil_hideGroup(warningGrp);
+    shufflePuzzle(seconds,500);
+    mcnt=0;
+    return 0;
+  }
   return 0;
 }
 
 UINT cancelhandler(SILEVENT *event) {
   gamestate=SOLVINGPUZZLE;
   sil_hideGroup(warningGrp);
+  sil_hideGroup(infoGrp);
   return 1;
 }
 
@@ -737,10 +850,15 @@ UINT dragpiece(SILEVENT *event) {
 
 
 
-
 void initBackground() {
   bgLyr=sil_PNGtoNewLayer("game_background.png",0,0);
   sil_setKeyHandler(bgLyr,0,0,0,keyhandler);
+
+  startLyr=sil_PNGtoNewLayer("intro.png",100,150);
+  sil_setFlags(startLyr,SILFLAG_MOUSEALLPIX);
+  sil_setClickHandler(startLyr,goplay) ;
+  sil_updateDisplay();
+
 }
 
 void initPuzzleSelect() {
@@ -814,6 +932,10 @@ void initWarning() {
   sil_setFlags(warnbackLyr,SILFLAG_MOUSESHIELD);
   sil_addLayerGroup(warningGrp,warnbackLyr);
 
+  warnshuffleLyr=sil_PNGtoNewLayer("warningshuffle.png",290,300);
+  sil_setFlags(warnshuffleLyr,SILFLAG_MOUSESHIELD);
+  sil_addLayerGroup(warningGrp,warnshuffleLyr);
+
   btn_okLyr=sil_PNGtoNewLayer("surebutton.png",307,535);
   sil_setFlags(btn_okLyr,SILFLAG_MOUSEALLPIX);
   sil_setAlphaLayer(btn_okLyr,0.3);
@@ -860,6 +982,19 @@ void initWinning() {
 
 }
 
+void initInfo() {
+  infoGrp=sil_createGroup();
+  infobackLyr=sil_PNGtoNewLayer("infobackground.png",45,120);
+  sil_setFlags(winningLyr,SILFLAG_MOUSESHIELD);
+  sil_setClickHandler(infobackLyr,cancelhandler);
+  sil_addLayerGroup(infoGrp,infobackLyr);
+
+  infoLyr=sil_addLayer(85,160,800,600,SILTYPE_ARGB);
+  sil_addLayerGroup(infoGrp,infoLyr);
+  
+  sil_hideGroup(infoGrp);
+}
+
 void initPuzzleSolving() {
   solveGrp=sil_createGroup();
   boardLyr=sil_addLayer(150,150,700,700,SILTYPE_ARGB);
@@ -881,6 +1016,21 @@ void initPuzzleSolving() {
   sil_setClickHandler(btn_restartLyr,restart);
   sil_addLayerGroup(solveGrp,btn_restartLyr);
 
+  btn_shuffleLyr=sil_PNGtoNewLayer("shuffle.png",900,880);
+  sil_setFlags(btn_shuffleLyr,SILFLAG_MOUSEALLPIX);
+  sil_setAlphaLayer(btn_shuffleLyr,0.3);
+  sil_setHoverHandler(btn_shuffleLyr,lightUp);
+  sil_setClickHandler(btn_shuffleLyr,shuffle);
+  sil_addLayerGroup(solveGrp,btn_shuffleLyr);
+
+  btn_infoLyr=sil_PNGtoNewLayer("info.png",670,880);
+  sil_setFlags(btn_infoLyr,SILFLAG_MOUSEALLPIX);
+  sil_setAlphaLayer(btn_infoLyr,0.3);
+  sil_setHoverHandler(btn_infoLyr,lightUp);
+  sil_setClickHandler(btn_infoLyr,info);
+  sil_addLayerGroup(solveGrp,btn_infoLyr);
+
+
   movesLyr=sil_addLayer(900,145,100,80,SILTYPE_ARGB);
   sil_PNGintoLayer(movesLyr,"moves.png",0,0);
   sil_addLayerGroup(solveGrp,movesLyr);
@@ -890,7 +1040,7 @@ void initPuzzleSolving() {
 
 
   mcnt=0;
-  updateMove;
+  updateMove();
 
   sil_hideGroup(solveGrp);
 
@@ -1025,6 +1175,15 @@ void puzzleSolving() {
   sil_PNGintoLayer(boardLyr,puzzle.background,0,0);
   sil_show(boardLyr);
 
+  /* place info about game on hidden info panel */
+  sil_clearLayer(infoLyr);
+  if (puzzle.info[0]!=0) {
+    sil_PNGintoLayer(infoLyr,puzzle.info,0,0);
+  } else {
+    sil_hide(btn_infoLyr);
+  }
+  
+
   /* now, create layers with the piecespic */
   tmpLyr=sil_PNGtoNewLayer(puzzle.pieces,0,0);
   //log_info("pieces %s wxh=%dx%d",puzzle.pieces,tmpLyr->fb->width,tmpLyr->fb->height);
@@ -1143,9 +1302,14 @@ void warning(BYTE type) {
   if (WARNBACK==type) {
     gamestate=WARNBACK;
     sil_show(warnbackLyr);
-  } else {
+  } 
+  if (WARNRESTART==type) {
     gamestate=WARNRESTART;
     sil_show(warnrestartLyr);
+  } 
+  if (WARNSHUFFLE==type) {
+    gamestate=WARNSHUFFLE;
+    sil_show(warnshuffleLyr);
   }
   sil_show(btn_okLyr);
   sil_setAlphaLayer(btn_okLyr,0.3);
@@ -1175,6 +1339,15 @@ void winning() {
   sil_updateDisplay();
 }
 
+void displayInfo() {
+  gamestate=INFO;
+  sil_topGroup(infoGrp);
+  sil_showGroup(infoGrp);
+
+
+  sil_updateDisplay();
+}
+
 #ifdef SIL_W32
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
 #else
@@ -1194,9 +1367,10 @@ int main() {
   initPuzzleSolving();
   initWarning();
   initWinning();
+  initInfo();
 
 
-  puzzleSelect();
+ // puzzleSelect();
 
   sil_mainLoop();
 
