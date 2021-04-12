@@ -23,4 +23,4 @@ gdi: clean
 	$(MAKE) PROG=shima
 
 clean: 
-	rm -rf ../bin/*.exe *.o 
+	rm -rf ../bin/*.exe ../bin/*.o *.o 
