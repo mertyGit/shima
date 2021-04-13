@@ -380,6 +380,7 @@ void showPreview(SILLYR *layer,int idx) {
   /* no preview keyword found or empty ? , no preview for you */
   if (0==strlen(puzzle.preview)) return;
 
+  sil_clearLayer(layer);
   sil_PNGintoLayer(layer,puzzle.preview,0,0);
   sil_show(layer);
 
@@ -985,7 +986,7 @@ void initWinning() {
 void initInfo() {
   infoGrp=sil_createGroup();
   infobackLyr=sil_PNGtoNewLayer("infobackground.png",45,120);
-  sil_setFlags(winningLyr,SILFLAG_MOUSESHIELD);
+  sil_setFlags(infobackLyr,SILFLAG_MOUSESHIELD);
   sil_setClickHandler(infobackLyr,cancelhandler);
   sil_addLayerGroup(infoGrp,infobackLyr);
 
