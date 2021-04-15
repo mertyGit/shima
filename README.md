@@ -66,7 +66,7 @@ Accompanied by:
 <IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_board.png" WIDTH="200"><BR>
 
 **easy_4x4_picture_pieces.png** <BR>
-<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_picture_pieces.png" WIDTH="200"><BR>
+<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_picture_pieces.png" WIDTH="180"><BR>
     
 **easy_4x4_info.png** (also shared with "easy_4x4" puzzle) <BR>
 <IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_info.png" WIDTH="200"><BR>
