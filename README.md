@@ -8,6 +8,16 @@ Shifting Madness , program to create and play difficult sliding puzzles. Used as
 Check releases page. Latest release is a ["beta" release for windows only](https://github.com/mertyGit/shima/releases/download/beta1.0/Shima_Windows_v1_Beta.zip), more platforms will follow. 
 Installing is easy, just unpack the .zip file to directory you like, and start the shima.exe ....thats it..
 
+# Puzzles included
+
+At this moment the following puzzles are included (in the puzzle directory) :
+* **easy 4x4** <BR>![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_preview.png)
+* **L'ane Rouge** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/ane_rouge_preview.png)
+* **Dad's Puzzler** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/dads_puzzler_preview.png)
+* **Quzzle** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/quzzle_preview.png)
+* **Traffic Jam** (7 variants) <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/traffic_jam12_preview.png)
+* **Rush Hour** (3 variants, thanks to Michael Fogleman) <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/rush_hour_6x6_lvl3_preview.png)
+
 # How to create your own puzzle
 
 Create an ".ini" file and place it in the "puzzles" directory right under the directory shima executable is in. 
