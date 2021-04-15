@@ -12,7 +12,7 @@ Installing is easy, just unpack the .zip file to directory you like, and start t
 
 At this moment the following puzzles are included (in the puzzle directory) :
 * **easy 4x4** <BR>![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_preview.png)
-* **L'ane Rouge** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/ane_rouge_preview.png)
+* **L'Âne Rouge** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/ane_rouge_preview.png)
 * **Dad's Puzzler** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/dads_puzzler_preview.png)
 * **Quzzle** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/quzzle_preview.png)
 * **Traffic Jam** (7 variants) <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/traffic_jam12_preview.png)
