@@ -1,6 +1,7 @@
 E = .exe
 DISP = winGDIdisplay
-CFLAGS = -mconsole -lgdi32 -DSIL_W32
+#CFLAGS = -mconsole -lgdi32 -DSIL_W32
+CFLAGS = -mwindows -lgdi32 -DSIL_W32
 CC = x86_64-w64-mingw32-gcc
 ICO = ico.rco
 DEBUG = -g
