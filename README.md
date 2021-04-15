@@ -32,7 +32,7 @@ The following keywords can be used:
 * **preview** => 100px x 100px png image (within puzzle directory !) of preview picture, as will be seen in selection screen. 
 * **background** => 600px x 600px png image of the "board" or "non movable background" of the puzzle. The "shiftable pieces" will be placed on top of it.
 * **pieces** => png image of a combination of the pieces in the "start" position. SHIMA will "cut" them up and makes it moveable pieces using the "start" information** (can be any size, but of couse smaller then 600px x 600px)
-* **Info** => 
+* **Info** => -optional- png image (max 700x700) with (more) information and instructions about the puzzle. Will be displayed when "info" icon is pressed.
 * **pospieces** => left upper corner offset (x, y) of background picture the pieces will be placed on (like inside the border drawn in the background pic)
 * **shufflefirst** => -optional- before starting, shuffle the start position randomly (but always the same). Usefull for "simple" sliding puzzles.
 * **difficulty** => amount of "stars" to show on puzzle selection screen
