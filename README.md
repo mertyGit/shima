@@ -6,3 +6,6 @@ Shifting Madness , program to create and play difficult sliding puzzles. Used as
 # How to download
 
 Check releases page. Latest release is a ["beta" release for windows only](https://github.com/mertyGit/shima/releases/download/beta1.0/Shima_Windows_v1_Beta.zip), more platforms will follow. 
+Installing is easy, just unpack the .zip file to directory you like, and start the shima.exe ....thats it..
+
+
