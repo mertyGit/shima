@@ -1,5 +1,5 @@
 # SHIMA
-Shifting Madness , program to create and play difficult sliding puzzles. Used as showcase for SIL , a small multi-platform simpel GUI library.
+Shifting Madness , program to create and play difficult sliding puzzles. Used as showcase/testcase for [SIL "Simple Interactive Layers"](https://github.com/mertyGit/SIL) , a small multi-platform simpel GUI library I have been working on.
 
 <img src="https://github.com/mertyGit/shima/releases/download/beta1.0/shima_1beta_screenshot1.png" width="300">&nbsp;<img src="https://github.com/mertyGit/shima/releases/download/beta1.0/shima_1beta_screenshot2.png" width="300">&nbsp;<img src="https://github.com/mertyGit/shima/releases/download/beta1.0/shima_1beta_screenshot4.png" width="300">&nbsp;<BR>
 
