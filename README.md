@@ -37,7 +37,7 @@ goal:Fix the picture
 creator: Remco Schellekens, photo by Hans-Peter Gauster
 preview:easy_4x4_picture_preview.png
 background:easy_board.png
-info: easy_4x4_info.png
+info: easy_4x4_picture_info.png
 pieces:easy_4x4_picture_pieces.png
 pospieces: 50,50
 shufflefirst:yes
@@ -68,5 +68,5 @@ Accompanied by:
 **easy_4x4_picture_pieces.png** <BR>
 <IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_picture_pieces.png" WIDTH="180"><BR>
     
-**easy_4x4_info.png** (also shared with "easy_4x4" puzzle) <BR>
-<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_info.png" WIDTH="200"><BR>
+**easy_4x4_picture_info.png**  <BR>
+<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_picture_info.png" WIDTH="200"><BR>
