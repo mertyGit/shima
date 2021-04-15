@@ -59,14 +59,14 @@ DEF_
 ```
 
 Accompanied by:
-**easy_4x4_preview.png** <BR>
-<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_preview.png" WIDTH="100"><BR>
+**easy_4x4_picture_preview.png** <BR>
+<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_picture_preview.png" WIDTH="100"><BR>
 
-**easy_board.png** (shared with "easy_4x4_picture" puzzle) <BR>
+**easy_board.png** (shared with "easy_4x4" puzzle) <BR>
 <IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_board.png" WIDTH="200"><BR>
 
-**easy_4x4_pieces.png** <BR>
-<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_pieces.png" WIDTH="200"><BR>
+**easy_4x4_picture_pieces.png** <BR>
+<IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_picture_pieces.png" WIDTH="200"><BR>
     
-**easy_4x4_info.png** <BR>
+**easy_4x4_info.png** (also shared with "easy_4x4" puzzle) <BR>
 <IMG SRC="https://github.com/mertyGit/shima/blob/main/bin/puzzles/easy_4x4_info.png" WIDTH="200"><BR>
