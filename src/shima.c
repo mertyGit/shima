@@ -1286,7 +1286,7 @@ void puzzleSolving() {
         if (2==code) {
           /* fixed piece; just copy single instance directly onto board (with blending this time) */
           copyblock(tmpLyr,boardLyr,x*puzzle.pw,y*puzzle.ph,
-            x*puzzle.pw+puzzle.posx,y*puzzle.ph+puzzle.posx,1);
+            x*puzzle.pw+puzzle.posx,y*puzzle.ph+puzzle.posy,1);
         } 
       }
     }
