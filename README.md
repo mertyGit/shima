@@ -19,6 +19,8 @@ At this moment the following puzzles are included (in the puzzle directory) :
 * **Rush Hour** (3 variants, thanks to Michael Fogleman) <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/rush_hour_6x6_lvl3_preview.png)
 * **Climb Puzzle 15** (4 variants) <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/climb_game15_1_preview.png)
 * **Neo Black & White** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/neo_black_white_preview.png)
+* **Get My Goat** <BR> ![](https://github.com/mertyGit/shima/blob/main/bin/puzzles/get_my_goat_preview.png)
+
 
 # How to create your own puzzle
 
